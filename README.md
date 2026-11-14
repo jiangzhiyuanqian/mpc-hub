@@ -29,6 +29,8 @@ Releases 页有打包好的 Windows 便携版，**下载即用，不需要装 Py
 
 首次运行会在 `~/.mpc-hub/` 建配置文件；Key 只写进那一个文件。
 
+已实测：下载 zip → 解压 → `mpc.exe selftest` **8/8 通过**，双击 `MPC-Hub.exe` 直接出窗口。
+
 ---
 
 ## 1. 装源码跑
@@ -298,6 +300,7 @@ packaging/
 - 内置 agent 运行时基于 LangGraph；LangGraph 缺失时会自动降级成等价的线性执行器。
 - 用本机 Ollama（`http://127.0.0.1:11434/v1`）时，客户端会自动绕过系统代理 —— 否则 Windows 上开着系统代理会把本机请求甩给代理，直接 502。
 - exe 只有 Windows x64 版；macOS / Linux 请用源码跑。
+- **数据落点**：配置与 API Key 在 `~/.mpc-hub/config.json`（只在你自己的电脑上），数据库在 **exe 同级的 `data\mpc.db`**（便携式，删掉 exe 目录就等于重置）；所以别把 exe 放进没有写权限的目录（比如 `C:\Program Files`）。
 
 ---
 
