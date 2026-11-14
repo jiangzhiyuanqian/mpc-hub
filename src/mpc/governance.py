@@ -22,6 +22,7 @@ from .store import Store
 # 承诺性/金钱性话术：客服 agent 不该自己拍板的事
 COMMITMENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("money", re.compile(r"(?:转账|付款|付钱|打款|充值|退款到账|先付|垫付)")),
+    ("price", re.compile(r"\d+(?:\.\d+)?\s*元|价格\D{0,4}\d|报价\D{0,4}\d|费用\D{0,4}\d")),
     ("purchase", re.compile(r"(?:下单|购买|买一单|帮你买|代下单)")),
     ("guarantee", re.compile(r"(?:保证|承诺一定|百分之百|百分百|包过|包好)")),
     ("legal", re.compile(r"(?:一定赔|索赔|诉讼|起诉|报警)")),

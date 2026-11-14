@@ -82,3 +82,21 @@ def test_write_quota_blocks(store):
     v = gov.check_outbound(env(), "好的")
     assert v.decision.value == "drop"
     assert v.matched_rule == "quota"
+
+
+def test_outbound_quoted_price_needs_approval(store):
+    """模型自己报出价格（哪怕用户没要求）也要转人工。
+
+    实测教训：接真实模型后它会主动编价（"价格是299元"），
+    只拦"承诺性动作"的老规则拦不住这种幻觉报价。
+    """
+    gov = Governance(store, GovernanceConfig())
+    v = gov.check_outbound(env("多少钱"), "您好，这款产品的价格是299元。")
+    assert v.decision.value == "approve"
+    assert v.matched_rule == "commit:price"
+
+
+def test_outbound_normal_text_passes(store):
+    gov = Governance(store, GovernanceConfig())
+    v = gov.check_outbound(env("怎么用"), "您好，把具体场景告诉我，我给您一步步说明操作流程。")
+    assert v.decision.value == "send"

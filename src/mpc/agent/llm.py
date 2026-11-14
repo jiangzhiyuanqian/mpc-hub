@@ -22,6 +22,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from typing import Any, Iterator
+from urllib.parse import urlparse
 
 import httpx
 
@@ -119,9 +120,25 @@ def parse_json_object(raw: str) -> dict[str, Any]:
         raise LLMError(f"模型返回的 JSON 无法解析：{raw[:200]}") from exc
 
 
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
+
+
+def _is_local_endpoint(base_url: str) -> bool:
+    """判断 base_url 是否指向本机。
+
+    本机端点（如 Ollama 的 127.0.0.1:11434）绝不能走系统代理：
+    Windows 上 httpx 的 trust_env 会去读注册表里的 WinINET 代理设置，
+    于是本机请求被甩给代理，代理连不到 127.0.0.1，直接返回 502 空响应。
+    """
+    try:
+        host = (urlparse(base_url).hostname or "").lower()
+    except ValueError:
+        return False
+    return host in _LOCAL_HOSTS or host.startswith("127.")
+
+
 class OpenAICompatLLM(BaseLLM):
     """对接任何 OpenAI 兼容 /chat/completions 端点。"""
-
     def __init__(self, cfg: LLMConfig | None = None, client: httpx.Client | None = None) -> None:
         self.cfg = cfg or LLMConfig()
         self._client = client
@@ -131,7 +148,10 @@ class OpenAICompatLLM(BaseLLM):
     @property
     def client(self) -> httpx.Client:
         if self._client is None:
-            self._client = httpx.Client(timeout=self.cfg.timeout)
+            self._client = httpx.Client(
+                timeout=self.cfg.timeout,
+                trust_env=not _is_local_endpoint(self.cfg.base_url),
+            )
         return self._client
 
     def close(self) -> None:
