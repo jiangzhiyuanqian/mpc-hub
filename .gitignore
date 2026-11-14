@@ -1,0 +1,29 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 运行期数据（会话库、日志、凭据备份）
+data/
+*.db
+*.db-journal
+*.sqlite3
+.env
+.env.*
+
+# 本机配置与密钥（绝不入库）
+config.json
+.mpchub/
+.mpc-hub/
+
+# 编辑器
+.idea/
+.vscode/
+*.swp
+.DS_Store
