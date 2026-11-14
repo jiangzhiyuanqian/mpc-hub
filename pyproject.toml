@@ -38,7 +38,10 @@ Repository = "https://github.com/jiangzhiyuanqian/mpc-hub"
 Issues = "https://github.com/jiangzhiyuanqian/mpc-hub/issues"
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+# 现代桌面端（PySide6/Qt6）。不装也能用：mpc gui 会回落到 tkinter 简化版。
+gui = ["PySide6-Essentials>=6.9"]
+# 开发/打包用
+dev = ["pytest>=8", "pyinstaller>=6.10"]
 
 [project.scripts]
 mpc = "mpc.cli:main"

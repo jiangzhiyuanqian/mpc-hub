@@ -31,9 +31,24 @@ def _hub(db_path: str = DEFAULT_DB) -> Hub:
 
 
 def cmd_gui(args: argparse.Namespace) -> int:
-    from .desktop import launch
+    """桌面窗口。
 
-    return launch()
+    默认用现代的 Qt 版（PySide6）；没装 PySide6 就回落到老的 tkinter 版，
+    免得为了看个窗口还得先装 60MB 的 Qt。
+    """
+    try:
+        from .desktop_qt import QT_AVAILABLE, launch
+    except Exception:
+        QT_AVAILABLE = False
+        launch = None
+
+    if QT_AVAILABLE and launch is not None:
+        return launch(args.db)
+
+    from .desktop import launch as launch_legacy
+
+    print("[提示] 未安装 PySide6，使用简化版窗口。装现代版：pip install \"mpc-hub[gui]\"")
+    return launch_legacy()
 
 
 def cmd_chat(args: argparse.Namespace) -> int:

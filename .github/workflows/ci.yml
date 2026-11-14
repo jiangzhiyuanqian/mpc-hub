@@ -32,3 +32,28 @@ jobs:
 
       - name: 能力矩阵自检
         run: python -m mpc capabilities
+
+  gui:
+    # 桌面端（PySide6/Qt6）单独跑一条：构造窗口 + 离屏冒烟，
+    # 免得 GUI 代码坏了却等到发版才发现。
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 安装（含 GUI 依赖）
+        run: pip install -e ".[gui,dev]"
+
+      - name: GUI 冒烟测试（离屏）
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: pytest -q tests/test_desktop_qt.py
+
+      - name: 确认 GUI 能起来
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -c "from mpc.desktop_qt import QT_AVAILABLE; print('QT_AVAILABLE =', QT_AVAILABLE); assert QT_AVAILABLE"
+

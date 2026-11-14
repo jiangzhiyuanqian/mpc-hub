@@ -8,9 +8,30 @@
 - HTTP 后台（`mpc serve`）：只监听本机，提供入站、审批、审计、指标接口。
 - 平台接入：微信 iLink（扫码即用）、QQ OneBot v11、通用 Webhook、以及**任意第三方连接器**（插件式扩展）。
 
+![桌面端](docs/screenshot.png)
+
+> 左边是**平台选择层**（微信 iLink / QQ OneBot 小号 / QQ 桌面客户端 / 抖音 网页版 / Webhook / 本地回环），
+> 中间是会话列表，右边是**嵌入式聊天窗**：agent 自动回的和你手动接管着发的都在这一屏里。
+
 ---
 
-## 1. 安装
+## 0. 不想装 Python？直接下载 exe
+
+Releases 页有打包好的 Windows 便携版，**下载即用，不需要装 Python**：
+
+👉 https://github.com/jiangzhiyuanqian/mpc-hub/releases
+
+| 文件 | 说明 |
+| --- | --- |
+| `mpc-hub-windows-x64.zip` | 解压后里面有 `MPC-Hub.exe`（图形版，双击出窗口）和 `mpc.exe`（命令行版） |
+| `MPC-Hub.exe` | 图形版主程序：平台选择层 + 会话列表 + 嵌入式聊天窗 |
+| `mpc.exe` | 命令行版：`mpc.exe gui` / `mpc.exe chat` / `mpc.exe serve` / `mpc.exe selftest` |
+
+首次运行会在 `~/.mpc-hub/` 建配置文件；Key 只写进那一个文件。
+
+---
+
+## 1. 装源码跑
 
 需要 Python 3.11 以上（开发环境用 3.14 验证过）。
 
@@ -24,7 +45,7 @@ python -m venv .venv
 # macOS / Linux:
 source .venv/bin/activate
 
-pip install -e .
+pip install -e ".[gui]"    # gui 额外装 PySide6 桌面端；只跑后端就 pip install -e .
 ```
 
 也可以直接装（不克隆）：
@@ -39,24 +60,35 @@ pip install "mpc-hub @ git+https://github.com/jiangzhiyuanqian/mpc-hub.git"
 
 ## 2. 三种用法
 
-### 2.1 `mpc gui` —— 桌面设置窗口（第一次用先跑这个）
+### 2.1 `mpc gui` —— 桌面端（第一次用先跑这个）
 
 ```
 mpc gui
 ```
 
-窗口有五个页签：
+界面是 **PySide6 / Qt6 原生桌面窗口**（深色主题），三栏布局，和现在的电脑软件一个观感：
+
+| 区域 | 内容 |
+| --- | --- |
+| 左栏 · 平台选择层 | 每个社交平台一张卡片：图标、名称、当前状态灯（已连接 / 未连接 / 规划中）、一句话说明；下面有「审批队列（n）」「设置」「指标」 |
+| 中栏 · 会话 | 该平台下的会话列表，最近消息在上 |
+| 右栏 · 嵌入式聊天窗 | 气泡样式的聊天记录 + 底部输入框 +「✍ 拟一条」「发送」；顶部可切 **自动回复 / 手动接管** |
+
+**自动回复**：agent 收到消息 → 判断 → 生成回复 → 过治理闸门 → 直接发出去。
+**手动接管**：agent 只给「AI 建议卡片」（发送 / 换一句 / 丢弃），你点头才发 —— 跟 QQ 里挂个机器人小号是一回事，只是人在你这边。
+
+左下角「设置」弹出三个页签：
 
 | 页签 | 作用 |
 | --- | --- |
 | 模型接口 | 选供应商（DeepSeek / MiniMax / OpenAI / Ollama / 自定义 OpenAI 兼容端点）、填 Base URL、**API Key**、模型名；可一键拉取该接口的模型列表、测试连通性 |
 | 平台接入 | 微信 iLink 开关与**扫码登录**（窗口里直接出二维码）、QQ OneBot 地址与 token、通用 Webhook 出站地址、自定义连接器 |
 | 治理规则 | 白名单、主人 ID、黑名单、服务时段、每日读写配额、单条回复字数上限、四个开关（承诺需确认 / 群聊需确认 / 群聊仅@时回复 / 丢弃纯招呼） |
-| 对话测试 | 不用接平台，先跟客服 agent 聊两句，看它怎么判、怎么回 |
-| 运行状态 | 能力矩阵、实时指标、审计流水、连接 / 断开微信通道 |
 
 配置保存到 `~/.mpc-hub/config.json`（可用环境变量 `MPC_CONFIG` 改路径）。
 **Key 只写进这一个文件**，文件权限会收紧到仅本人可读；界面与 HTTP 接口返回的都是掩码值，不会回显明文。
+
+> 没装 PySide6 时 `mpc gui` 会自动回落到 tkinter 简化版（五个页签，功能少一截但能跑）。
 
 ### 2.2 `mpc chat` —— 终端里直接对话
 
@@ -117,9 +149,16 @@ mpc selftest
 - **一个账号一个 poller**，建议用专用小号；
 - 走的是腾讯官方的 iLink Bot 通道，与微信个人号自动化是两回事 —— 不碰你的主号，不注入、不 Hook。
 
-### 3.2 QQ（OneBot v11）
+### 3.2 QQ —— 两条路线，一条已经能用，一条明确标注"规划中"
 
-填 OneBot 的地址（如 `http://127.0.0.1:3000`）与 access_token。上游可以用 LLOneBot、Lagrange.Milky 等任意 OneBot v11 实现。
+桌面端左栏有 QQ 相关卡片分两档：
+
+| 路线 | 状态 | 说明 |
+| --- | --- | --- |
+| **QQ · OneBot 小号** | ✅ 可用 | 你有独立的 QQ 号，让它当"机器人小号"：填 OneBot 地址（如 `http://127.0.0.1:3000`）与 access_token，上游用 LLOneBot、Lagrange.Milky 等任意 OneBot v11 实现。这个号在 QQ 列表里就是一个独立会话，像"大肥鱼"那样挂在你自己的 QQ 上 |
+| **QQ · 桌面客户端** | ⚠️ 规划中 | 直接驱动你正在用的 QQ 桌面客户端（读它的聊天窗、往输入框打字发送）。**没实现，也不打算假装能**：QQNT 是 Qt Quick 渲染，UI 自动化多半只能看到空壳窗口，能读到的是渲染出来的一堆子控件而不是聊天记录。现在唯一稳的桌面路线是截图 + OCR + 坐标点击，误发风险高 |
+
+想做"桌面客户端控制"这条，先自己验一轮可行性再说，别默认它能用。
 
 ### 3.3 通用 Webhook
 
@@ -229,7 +268,8 @@ src/mpc/
   store.py            SQLite 存储与审计
   governance.py       入站出站双闸门
   hub.py              枢纽：幂等 → agent → 闸门 → 投递 / 挂起
-  desktop.py          tkinter 桌面设置窗口
+  desktop_qt.py      PySide6/Qt6 桌面端（平台选择层 + 会话 + 嵌入式聊天窗）
+  desktop.py          tkinter 桌面设置窗口（PySide6 没装时的回落版）
   cli.py              命令行入口
   server/app.py       FastAPI 后台
   agent/
@@ -242,6 +282,9 @@ src/mpc/
     registry.py       连接器注册表
     plugins.py        扩展点加载（配置模块路径 + entry points）
     loopback.py / onebot.py / webhook.py / ilink.py
+packaging/
+  mpc-hub.spec        PyInstaller 打包脚本（图形版 + 命令行版两个 exe）
+  gui_launcher.py / cli_launcher.py
 ```
 
 ---
@@ -250,9 +293,11 @@ src/mpc/
 
 - 微信 iLink：**只支持私聊**，一个账号一个长轮询进程，建议专用小号。
 - 微信个人号（4.x）自动化不在本程序范围内 —— 那种做法要 Hook 或注入，风险与封号代价都不小；本程序只走官方通道。
+- **QQ 桌面客户端控制没做**（UI 卡片里标着"规划中"），QQ 现在只走 OneBot 协议小号。
 - 没填 Key 时是离线 Mock，不是真模型。
 - 内置 agent 运行时基于 LangGraph；LangGraph 缺失时会自动降级成等价的线性执行器。
 - 用本机 Ollama（`http://127.0.0.1:11434/v1`）时，客户端会自动绕过系统代理 —— 否则 Windows 上开着系统代理会把本机请求甩给代理，直接 502。
+- exe 只有 Windows x64 版；macOS / Linux 请用源码跑。
 
 ---
 

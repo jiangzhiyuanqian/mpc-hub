@@ -50,8 +50,12 @@ class Hub:
 
     # ---------- 入站 ----------
 
-    def ingest(self, env: Envelope) -> dict[str, Any]:
-        """处理一条入站消息。幂等：同一条消息重复投递只会处理一次。"""
+    def ingest(self, env: Envelope, auto_send: bool = True) -> dict[str, Any]:
+        """处理一条入站消息。幂等：同一条消息重复投递只会处理一次。
+
+        `auto_send=False` 是「手动接管」模式：agent 仍然起草回复，
+        但**不投递**到平台，只把草稿交给主人（桌面端显示成建议卡片）。
+        """
         with self._lock:
             if self.store.has_inbound(env.platform.value, env.message_id):
                 self.counters["duplicate"] += 1
@@ -72,6 +76,26 @@ class Hub:
 
             if status == "sent" and result.get("action"):
                 action = Action.model_validate(result["action"])
+                if not auto_send:
+                    # 手动接管：只给建议，不投递。
+                    self.counters["suggested"] = self.counters.get("suggested", 0) + 1
+                    self.store.audit(
+                        "suggest",
+                        "held_for_owner",
+                        "手动接管模式：仅生成建议，未发送",
+                        platform=env.platform.value,
+                        conversation_id=env.conversation_id,
+                        sender_id=env.sender_id,
+                        payload={"draft": (result.get("draft") or "")[:500]},
+                    )
+                    return {
+                        "status": "suggested",
+                        "reason": "手动接管模式，未自动发送",
+                        "draft": result.get("draft", ""),
+                        "intent": result.get("intent", {}),
+                        "trace": result.get("trace", []),
+                        "message_id": env.message_id,
+                    }
                 ok = self._deliver(action)
                 if not ok:
                     self.counters["send_failed"] += 1
@@ -227,6 +251,72 @@ class Hub:
                 )
             )
         return ok
+
+    # ---------- 手动接管（主人自己发） ----------
+
+    def send_manual(
+        self,
+        platform: str | Platform,
+        conversation_id: str,
+        text: str,
+        *,
+        conversation_kind: str = "private",
+        sender_id: str = "owner",
+    ) -> dict[str, Any]:
+        """主人在桌面端自己敲一条，替他发到平台上。
+
+        依然要过出站闸：硬拦截（密钥泄漏 / 超长 / 空 / 超配额）照样生效；
+        承诺类规则跳过——是主人自己确认过的。
+        """
+        text = (text or "").strip()
+        if not text:
+            return {"ok": False, "status": "blocked", "reason": "空消息"}
+        try:
+            plat = platform if isinstance(platform, Platform) else Platform(platform)
+        except ValueError:
+            return {"ok": False, "status": "blocked", "reason": f"未知平台 {platform}"}
+
+        env = Envelope(
+            message_id=f"manual:{uuid.uuid4().hex}",
+            platform=plat,
+            conversation_id=conversation_id,
+            conversation_kind=ConversationKind(conversation_kind),
+            sender_id=sender_id,
+            sender_name="主人",
+            text=text,
+        )
+        verdict = self.gov.check_outbound(env, text, enforce_approval_rules=False)
+        if verdict.decision.value != "send":
+            self.store.audit(
+                "send",
+                "blocked",
+                verdict.reason,
+                platform=plat.value,
+                conversation_id=conversation_id,
+                payload={"text": text[:300]},
+            )
+            return {"ok": False, "status": "blocked", "reason": verdict.reason}
+
+        action = Action(
+            action_type="send_text",
+            platform=plat,
+            conversation_id=conversation_id,
+            conversation_kind=ConversationKind(conversation_kind),
+            text=text,
+            idempotency_key=f"manual:{uuid.uuid4().hex}",
+            created_at=time.time(),
+            meta={"mode": "manual"},
+        )
+        ok = self._deliver(action)
+        self.store.audit(
+            "send",
+            "manual_sent" if ok else "send_failed",
+            "主人手动发送",
+            platform=plat.value,
+            conversation_id=conversation_id,
+            payload={"text": text[:300]},
+        )
+        return {"ok": ok, "status": "sent" if ok else "send_failed", "reason": ""}
 
     # ---------- 查询 ----------
 

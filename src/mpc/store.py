@@ -230,6 +230,37 @@ class Store:
         )
         return [dict(r) for r in reversed(rows)]
 
+    def list_conversations(
+        self, platform: str | None = None, limit: int = 200
+    ) -> list[dict[str, Any]]:
+        """列出最近有消息的会话（桌面端左侧会话列表用）。
+
+        返回每项：platform / conversation_id / title / message_count /
+        last_at / last_text / last_sender。
+        """
+        sql = """
+            SELECT m.platform AS platform,
+                   m.conversation_id AS conversation_id,
+                   COALESCE(c.title, '') AS title,
+                   COUNT(*) AS message_count,
+                   MAX(m.created_at) AS last_at,
+                   (SELECT m2.text FROM messages m2
+                     WHERE m2.platform = m.platform AND m2.conversation_id = m.conversation_id
+                     ORDER BY m2.created_at DESC, m2.id DESC LIMIT 1) AS last_text,
+                   (SELECT m3.sender_name FROM messages m3
+                     WHERE m3.platform = m.platform AND m3.conversation_id = m.conversation_id
+                     ORDER BY m3.created_at DESC, m3.id DESC LIMIT 1) AS last_sender
+              FROM messages m
+              LEFT JOIN conversations c
+                     ON c.platform = m.platform AND c.conversation_id = m.conversation_id
+             WHERE (? IS NULL OR m.platform = ?)
+             GROUP BY m.platform, m.conversation_id
+             ORDER BY last_at DESC
+             LIMIT ?
+        """
+        rows = self._query(sql, (platform, platform, limit))
+        return [dict(r) for r in rows]
+
     def watermark(self, platform: str, conversation_id: str) -> dict[str, Any]:
         rows = self._query(
             "SELECT last_at, last_message_id FROM watermarks WHERE platform = ? AND conversation_id = ?",
