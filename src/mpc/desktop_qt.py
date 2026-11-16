@@ -141,6 +141,14 @@ QSS = """
 QMainWindow, QWidget#Root {
     background: #0E1016;
 }
+/* 对话框是独立顶层窗口，不吃 QMainWindow 的背景规则：
+   不显式给深色底，就会出现"白底 + 近白字"，选中的页签直接看不见。 */
+QDialog {
+    background: #0E1016;
+}
+QDialog QLabel {
+    color: #E6E8EF;
+}
 QWidget#Sidebar {
     background: #14171F;
     border-right: 1px solid #232734;
@@ -496,7 +504,16 @@ if QT_AVAILABLE:
             super().__init__(parent)
             self.setWindowTitle("设置 · 多平台连接中心")
             self.resize(720, 560)
+            # 对话框是独立顶层窗口，显式套一次主题，避免落到系统浅色默认样式
+            self.setStyleSheet(QSS)
             self.settings = settings
+            # 凡是会打网络的按钮（拉模型列表 / 测试连接 / 扫码登录）一律走后台线程，
+            # 结果用队列回主线程刷新。否则 UI 线程被 socket 阻塞，窗口会变"未响应"。
+            self._queue: queue.Queue = queue.Queue()
+            self._busy = False
+            self._timer = QTimer(self)
+            self._timer.timeout.connect(self._drain)
+            self._timer.start(200)
 
             root = QVBoxLayout(self)
             root.setContentsMargins(18, 18, 18, 18)
@@ -626,26 +643,71 @@ if QT_AVAILABLE:
         def _log(self, line: str) -> None:
             self.llm_out.appendPlainText(line)
 
-        def _do_fetch_models(self) -> None:
-            import httpx
+        # ---------- 后台线程（网络调用一律别在 UI 线程上做） ----------
 
+        def _async(self, work: Callable[[], Any], done: Callable[[str, Any], None]) -> None:
+            """把 work 丢后台线程跑，结果经 done("ok"|"error", 值) 回主线程。"""
+
+            def worker() -> None:
+                try:
+                    res = work()
+                except Exception as exc:  # 线程里的异常不能炸 UI
+                    self._queue.put((done, ("error", str(exc))))
+                    return
+                self._queue.put((done, ("ok", res)))
+
+            threading.Thread(target=worker, daemon=True).start()
+
+        def _drain(self) -> None:
+            while True:
+                try:
+                    cb, payload = self._queue.get_nowait()
+                except queue.Empty:
+                    break
+                try:
+                    cb(*payload)
+                except Exception as exc:
+                    self._log(f"界面更新出错：{exc}")
+
+        def _set_busy(self, busy: bool) -> None:
+            """操作进行中禁用按钮，避免重复点击起多个请求。"""
+            self._busy = busy
+            for w in (
+                getattr(self, "fetch_btn", None),
+                getattr(self, "test_btn", None),
+                getattr(self, "qr_btn", None),
+            ):
+                if w is not None:
+                    w.setEnabled(not busy)
+
+        def _do_fetch_models(self) -> None:
             base = self.base_url.text().strip().rstrip("/")
             key = self.api_key.text().strip()
             if not base:
                 self._log("× 先填 Base URL")
                 return
-            try:
+            self._log("… 正在拉取模型列表…")
+
+            def work() -> list[str]:
+                import httpx
+
                 headers = {"Authorization": f"Bearer {key}"} if key else {}
                 r = httpx.get(f"{base}/models", headers=headers, timeout=20)
                 if r.status_code >= 400:
-                    self._log(f"× HTTP {r.status_code}: {r.text[:300]}")
-                    return
+                    raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
                 data = r.json()
                 items = data.get("data", []) if isinstance(data, dict) else []
-                names = [i.get("id", "") for i in items][:60]
-                self._log(f"✓ {len(names)} 个模型：" + ", ".join(names))
-            except Exception as exc:
-                self._log(f"× 请求失败：{exc}")
+                return [i.get("id", "") for i in items][:60]
+
+            def done(kind: str, value: Any) -> None:
+                if kind == "error":
+                    self._log(f"× 请求失败：{value}")
+                else:
+                    self._log(f"✓ {len(value)} 个模型：" + ", ".join(value))
+                self._set_busy(False)
+
+            self._set_busy(True)
+            self._async(work, done)
 
         def _do_test_llm(self) -> None:
             from .agent.llm import LLMConfig, OpenAICompatLLM
@@ -659,12 +721,21 @@ if QT_AVAILABLE:
             if not cfg.api_key:
                 self._log("× 没填 Key。先填自己的 Key，或用「本地回环」自测。")
                 return
-            try:
+            self._log("… 正在测试连接…")
+
+            def work() -> str:
                 llm = OpenAICompatLLM(cfg)
-                out = llm.chat("你是客服助手", "用一句话介绍你自己。")
-                self._log("✓ 模型回话：" + out)
-            except Exception as exc:
-                self._log(f"× 调用失败：{exc}")
+                return llm.chat("你是客服助手", "用一句话介绍你自己。")
+
+            def done(kind: str, value: Any) -> None:
+                if kind == "error":
+                    self._log(f"× 调用失败：{value}")
+                else:
+                    self._log("✓ 模型回话：" + value)
+                self._set_busy(False)
+
+            self._set_busy(True)
+            self._async(work, done)
 
         # ---- 平台接入
 
@@ -690,6 +761,7 @@ if QT_AVAILABLE:
             glay.addWidget(self.wx_uin, 1, 1)
             qr_btn = QPushButton("扫码登录")
             glay.addWidget(qr_btn, 1, 2)
+            self.qr_btn = qr_btn
             self.qr_label = QLabel("")
             self.qr_label.setAlignment(Qt.AlignCenter)
             glay.addWidget(self.qr_label, 2, 0, 1, 4)
@@ -736,48 +808,65 @@ if QT_AVAILABLE:
         def _do_qr_login(self) -> None:
             from .connectors.ilink import ILinkConnector
 
-            self.qr_status = "正在取二维码…"
-            self.wx_status.setText(self.qr_status)
-            try:
-                conn = ILinkConnector(bot_token="", uin=self.wx_uin.text().strip())
-                qr = conn.login_qr()
-            except Exception as exc:
-                self.wx_status.setText(f"× 取码失败：{exc}")
-                return
-            path = Path.home() / ".mpc-hub" / "wechat-login-qr.png"
-            try:
-                _render_qr_png(qr["qr_url"], str(path))
-                pix = QPixmap(str(path))
-                self.qr_label.setPixmap(
-                    pix.scaled(
-                        QSize(190, 190),
-                        Qt.KeepAspectRatio,
-                        Qt.SmoothTransformation,
-                    )
-                )
-            except Exception as exc:
-                self.qr_label.setText(f"二维码渲染失败：{exc}")
+            uin = self.wx_uin.text().strip()
 
-            self.wx_status.setText("请用微信扫上面的码…")
-            deadline = time.time() + 120
-            while time.time() < deadline:
-                try:
-                    st = conn.login_status(qr["qrcode_id"])
-                except Exception as exc:
-                    self.wx_status.setText(f"× 查询状态失败：{exc}")
-                    return
-                status = (st.get("status") or "").lower()
-                if status == "confirmed":
-                    self.wx_token.setText(st.get("bot_token") or "")
+            def fetch() -> dict[str, Any]:
+                conn = ILinkConnector(bot_token="", uin=uin)
+                qr = conn.login_qr()
+                path = Path.home() / ".mpc-hub" / "wechat-login-qr.png"
+                _render_qr_png(qr["qr_url"], str(path))
+                return {"qr": qr, "path": str(path), "conn": conn}
+
+            def poll(conn: Any, qrcode_id: str) -> dict[str, Any]:
+                deadline = time.time() + 120
+                while time.time() < deadline:
+                    st = conn.login_status(qrcode_id)
+                    status = (st.get("status") or "").lower()
+                    if status == "confirmed":
+                        return st
+                    if status == "expired":
+                        raise RuntimeError("二维码过期，请再点一次扫码登录")
+                    time.sleep(2)
+                raise RuntimeError("扫码超时，请再点一次扫码登录")
+
+            def after_poll(kind: str, value: Any) -> None:
+                if kind == "error":
+                    self.wx_status.setText(f"× {value}")
+                else:
+                    self.wx_token.setText(value.get("bot_token") or "")
                     self.wx_enabled.setChecked(True)
                     self.wx_status.setText(
-                        f"✓ 已登录（账号 {st.get('ilink_user_id', '?')}），Token 已填好，保存即可"
+                        f"✓ 已登录（账号 {value.get('ilink_user_id', '?')}），Token 已填好，保存即可"
                     )
+                self._set_busy(False)
+
+            def after_fetch(kind: str, value: Any) -> None:
+                if kind == "error":
+                    self.wx_status.setText(f"× 取码失败：{value}")
+                    self._set_busy(False)
                     return
-                if status == "expired":
-                    self.wx_status.setText("× 二维码过期，请再点一次扫码登录")
-                    return
-                time.sleep(2)
+                # QPixmap 只能在 UI 线程用，所以贴图放这里；取码/渲染/轮询都在后台线程。
+                try:
+                    pix = QPixmap(value["path"])
+                    self.qr_label.setPixmap(
+                        pix.scaled(
+                            QSize(190, 190),
+                            Qt.KeepAspectRatio,
+                            Qt.SmoothTransformation,
+                        )
+                    )
+                except Exception as exc:
+                    self.qr_label.setText(f"二维码渲染失败：{exc}")
+                self.wx_status.setText("请用微信扫上面的码…")
+                # 再起一个后台线程轮询扫码状态
+                self._async(
+                    lambda: poll(value["conn"], value["qr"]["qrcode_id"]),
+                    after_poll,
+                )
+
+            self.wx_status.setText("正在取二维码…")
+            self._set_busy(True)
+            self._async(fetch, after_fetch)
 
         # ---- 治理规则
 

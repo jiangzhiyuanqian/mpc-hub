@@ -45,7 +45,13 @@ def cmd_gui(args: argparse.Namespace) -> int:
     if QT_AVAILABLE and launch is not None:
         return launch(args.db)
 
-    from .desktop import launch as launch_legacy
+    try:
+        from .desktop import launch as launch_legacy
+    except Exception as exc:
+        # 命令行版为了瘦身后不打包图形界面（Qt 占 40MB）。
+        print(f"[提示] 这个命令行版不含图形界面（{exc}）。")
+        print("       图形界面请双击同目录下的 MPC-Hub.exe。")
+        return 1
 
     print("[提示] 未安装 PySide6，使用简化版窗口。装现代版：pip install \"mpc-hub[gui]\"")
     return launch_legacy()

@@ -23,13 +23,15 @@ Releases 页有打包好的 Windows 便携版，**下载即用，不需要装 Py
 
 | 文件 | 说明 |
 | --- | --- |
-| `mpc-hub-windows-x64.zip` | 解压后里面有 `MPC-Hub.exe`（图形版，双击出窗口）和 `mpc.exe`（命令行版） |
-| `MPC-Hub.exe` | 图形版主程序：平台选择层 + 会话列表 + 嵌入式聊天窗 |
-| `mpc.exe` | 命令行版：`mpc.exe gui` / `mpc.exe chat` / `mpc.exe serve` / `mpc.exe selftest` |
+| `mpc-hub-windows-x64.zip` | 解压后得到一个 `MPC-Hub\` 文件夹，里面有 `MPC-Hub.exe`（图形版，双击出窗口）、`mpc.exe`（命令行版）和共享的 `_internal\` 依赖目录 —— **三个都要在一起，别只拷 exe** |
+| `MPC-Hub\MPC-Hub.exe` | 图形版主程序：平台选择层 + 会话列表 + 嵌入式聊天窗 |
+| `MPC-Hub\mpc.exe` | 命令行版：`mpc.exe gui` / `mpc.exe chat` / `mpc.exe serve` / `mpc.exe selftest` |
 
 首次运行会在 `~/.mpc-hub/` 建配置文件；Key 只写进那一个文件。
 
 已实测：下载 zip → 解压 → `mpc.exe selftest` **8/8 通过**，双击 `MPC-Hub.exe` 直接出窗口。
+
+**为什么是"文件夹 + 两个 exe"而不是单个 exe**：单文件版每次启动都要把 57MB 依赖解压到临时目录再杀软扫一遍，冷启动要 6 秒多；改成"文件夹"布局后依赖只解压一次，实测启动 **2.6 秒**（源码跑 3.0 秒）。命令行版 `mpc.exe` 不含 Qt 图形库，和图形版共用同一个 `_internal\`，所以整体只有一份依赖。
 
 ---
 
@@ -301,6 +303,7 @@ packaging/
 - 用本机 Ollama（`http://127.0.0.1:11434/v1`）时，客户端会自动绕过系统代理 —— 否则 Windows 上开着系统代理会把本机请求甩给代理，直接 502。
 - exe 只有 Windows x64 版；macOS / Linux 请用源码跑。
 - **数据落点**：配置与 API Key 在 `~/.mpc-hub/config.json`（只在你自己的电脑上），数据库在 **exe 同级的 `data\mpc.db`**（便携式，删掉 exe 目录就等于重置）；所以别把 exe 放进没有写权限的目录（比如 `C:\Program Files`）。
+- **别把程序整个删了只留 exe**：文件夹布局下 `_internal\` 是依赖本体，缺了它 exe 起不来。
 
 ---
 

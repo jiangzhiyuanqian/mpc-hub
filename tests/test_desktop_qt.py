@@ -95,3 +95,46 @@ def test_settings_dialog_keeps_user_model(app: QApplication, tmp_path: Path) -> 
             dlg.deleteLater()
     finally:
         win.close()
+
+
+def test_settings_network_buttons_do_not_block_ui_thread(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """回归：设置窗口里三个联网按钮必须在后台线程跑。
+
+    之前它们直接跑在 UI 线程上，点一下就冻结最长 30~120 秒，
+    窗口会显示"未响应"。这里用慢网络模拟，断言点击立刻返回。
+    """
+    import time
+
+    import httpx
+
+    from mpc.agent.llm import OpenAICompatLLM
+    from mpc.connectors.ilink import ILinkConnector
+
+    def slow(*_a, **_k):
+        time.sleep(2.0)
+        raise RuntimeError("模拟慢网络")
+
+    monkeypatch.setattr(httpx, "get", slow)
+    monkeypatch.setattr(OpenAICompatLLM, "chat", slow)
+    monkeypatch.setattr(ILinkConnector, "login_qr", slow)
+
+    win = MainWindow(str(tmp_path / "qt5.db"))
+    dlg = SettingsDialog(win, win.settings)
+    try:
+        dlg.api_key.setText("sk-test")
+        dlg.base_url.setText("https://example.invalid/v1")
+
+        for call in (dlg._do_fetch_models, dlg._do_test_llm, dlg._do_qr_login):
+            t0 = time.perf_counter()
+            call()
+            assert time.perf_counter() - t0 < 1.0, f"{call.__name__} 卡住了 UI 线程"
+
+        # 请求进行中按钮应当被禁用，防止重复点击起多个请求
+        assert not dlg.fetch_btn.isEnabled()
+        assert not dlg.test_btn.isEnabled()
+        assert not dlg.qr_btn.isEnabled()
+    finally:
+        dlg.deleteLater()
+        win.close()

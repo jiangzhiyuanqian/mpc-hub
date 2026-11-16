@@ -27,3 +27,7 @@ config.json
 .vscode/
 *.swp
 .DS_Store
+
+# 工具副产物
+.archify/
+nohup.out

@@ -25,7 +25,8 @@ jobs:
         run: python -m PyInstaller --noconfirm --clean packaging/mpc-hub.spec
 
       - name: 压成 zip（别人下载即用）
-        run: Compress-Archive -Path dist/MPC-Hub.exe,dist/mpc.exe -DestinationPath dist/mpc-hub-windows-x64.zip -Force
+        # onedir 布局：MPC-Hub.exe + mpc.exe + 共享的 _internal/ 依赖文件夹
+        run: Compress-Archive -Path dist/MPC-Hub -DestinationPath dist/mpc-hub-windows-x64.zip -Force
 
       - name: 挂到 Release
         uses: softprops/action-gh-release@v2

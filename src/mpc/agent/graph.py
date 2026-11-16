@@ -19,12 +19,32 @@ import time
 import uuid
 from typing import Any, TypedDict
 
-try:  # LangGraph 是首选编排器；装不上时降级为同序线性执行，服务照常可用
-    from langgraph.graph import END, START, StateGraph
+# LangGraph 单独 import 要 1.3 秒以上，而它只在真的有入站消息时才用得上。
+# 所以改成"用到才 import"：桌面端启动不再为它买单，第一条消息进来时再付这笔钱。
+_LANGGRAPH: tuple | None = None
+_LANGGRAPH_TRIED = False
 
-    LANGGRAPH_AVAILABLE = True
-except ImportError:  # pragma: no cover - 取决于运行环境
-    LANGGRAPH_AVAILABLE = False
+
+def _load_langgraph() -> tuple | None:
+    """首次调用时才真正 import LangGraph；返回 (END, START, StateGraph) 或 None。"""
+    global _LANGGRAPH, _LANGGRAPH_TRIED
+    if not _LANGGRAPH_TRIED:
+        _LANGGRAPH_TRIED = True
+        try:
+            from langgraph.graph import END, START, StateGraph
+
+            _LANGGRAPH = (END, START, StateGraph)
+        except ImportError:  # pragma: no cover - 取决于运行环境
+            _LANGGRAPH = None
+    return _LANGGRAPH
+
+
+def __getattr__(name: str):
+    # PEP 562：模块级属性按需计算，保留 LANGGRAPH_AVAILABLE 这个公开名字，
+    # 同时不让它变成启动期的一次强制 import。
+    if name == "LANGGRAPH_AVAILABLE":
+        return _load_langgraph() is not None
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 from ..contracts import Action, ActionType, Decision, Envelope, Verdict
 from ..governance import Governance
@@ -75,15 +95,25 @@ class CustomerServiceAgent:
         self.store = store
         self.gov = governance
         self.llm = llm
-        self.graph = self._build()
+        # 图延迟构造：第一条消息进来时才 import LangGraph 并编译图，
+        # 桌面端启动因此不用付这 1.3 秒。
+        self._graph: Any = None
+
+    @property
+    def graph(self) -> Any:
+        if self._graph is None:
+            self._graph = self._build()
+        return self._graph
 
     # ---------- 图 ----------
 
     def _build(self):
-        if not LANGGRAPH_AVAILABLE:
+        lg = _load_langgraph()
+        if lg is None:
             return _LinearGraph(
                 [self._ingest, self._triage, self._draft, self._gate, self._route]
             )
+        END, START, StateGraph = lg
         g = StateGraph(AgentState)
         g.add_node("ingest", self._ingest)
         g.add_node("triage", self._triage)

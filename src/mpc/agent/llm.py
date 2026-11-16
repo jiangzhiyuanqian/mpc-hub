@@ -21,10 +21,11 @@ import os
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Any, Iterator
+from typing import TYPE_CHECKING, Any, Iterator
 from urllib.parse import urlparse
 
-import httpx
+if TYPE_CHECKING:  # 只给类型检查器看；运行时不 import，省 ~0.16s 启动时间
+    import httpx
 
 
 @dataclass
@@ -146,8 +147,10 @@ class OpenAICompatLLM(BaseLLM):
         self.last_usage: dict[str, Any] = {}
 
     @property
-    def client(self) -> httpx.Client:
+    def client(self) -> "httpx.Client":
         if self._client is None:
+            import httpx
+
             self._client = httpx.Client(
                 timeout=self.cfg.timeout,
                 trust_env=not _is_local_endpoint(self.cfg.base_url),
@@ -195,7 +198,9 @@ class OpenAICompatLLM(BaseLLM):
             payload["response_format"] = {"type": "json_object"}
         return payload
 
-    def _post(self, payload: dict[str, Any]) -> httpx.Response:
+    def _post(self, payload: dict[str, Any]) -> "httpx.Response":
+        import httpx
+
         url = self.cfg.base_url.rstrip("/") + "/chat/completions"
         last_error: Exception | None = None
         for attempt in range(self.cfg.max_retries + 1):
@@ -268,6 +273,8 @@ class OpenAICompatLLM(BaseLLM):
         temperature: float | None = None,
         max_tokens: int | None = None,
     ) -> Iterator[str]:
+        import httpx
+
         payload = self._payload(
             system, user, fast=fast, temperature=temperature, max_tokens=max_tokens, stream=True
         )
