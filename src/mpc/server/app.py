@@ -74,7 +74,7 @@ def create_app(hub: Hub | None = None, settings: Settings | None = None) -> Fast
 
     app = FastAPI(
         title="多平台连接中心 · 客服后台",
-        version="0.2.0",
+        version="0.5.0",
         description="独立运行的客服 agent 后台：不依赖也不修改 DSH。",
         lifespan=lifespan,
     )

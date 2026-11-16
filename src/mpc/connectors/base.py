@@ -52,3 +52,18 @@ class Connector(abc.ABC):
 
     def stop(self) -> None:
         """停止轮询/长连（如需要）。默认无操作。"""
+
+    def status(self) -> dict[str, Any]:
+        """连接器的真实健康状态，供界面显示。
+
+        默认认为"空闲"。子类（尤其是长轮询型）应覆写，返回：
+        ``state``（idle/running/error）、``running``、``detail``（给用户看的一句话）、
+        ``last_error``、``last_poll_at``（Unix 秒，0 表示还没轮询过）。
+        """
+        return {
+            "state": "idle",
+            "running": False,
+            "detail": "",
+            "last_error": "",
+            "last_poll_at": 0.0,
+        }

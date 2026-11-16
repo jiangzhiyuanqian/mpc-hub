@@ -138,3 +138,81 @@ def test_settings_network_buttons_do_not_block_ui_thread(
     finally:
         dlg.deleteLater()
         win.close()
+
+
+def test_main_window_starts_connectors(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """回归：主窗口必须把连接器的长轮询拉起来。
+
+    之前 Qt 版从没调用 `registry.start_all()`，于是界面显示"已连接"，
+    但微信消息从来没被拉下来，手机端发消息自然没人回。
+    """
+    import mpc.desktop_qt as dq
+
+    real_build = dq.build_runtime
+    calls: list[bool] = []
+
+    def spy(*args, **kwargs):
+        rt = real_build(*args, **kwargs)
+        original = rt.registry.start_all
+
+        def start_all() -> None:
+            calls.append(True)
+            original()
+
+        rt.registry.start_all = start_all  # type: ignore[method-assign]
+        return rt
+
+    monkeypatch.setattr(dq, "build_runtime", spy)
+    win = MainWindow(str(tmp_path / "qt6.db"))
+    try:
+        assert calls, "MainWindow 必须调用 registry.start_all()，否则不会轮询、不会回消息"
+    finally:
+        win.close()
+
+
+def test_platform_hints_list_missing_parameters(
+    app: QApplication, tmp_path: Path
+) -> None:
+    """平台接入页要直接说清"还差什么"，别让用户自己猜。"""
+    win = MainWindow(str(tmp_path / "qt7.db"))
+    dlg = SettingsDialog(win, win.settings)
+    try:
+        dlg.wx_enabled.setChecked(True)
+        dlg.wx_token.setText("")
+        dlg._refresh_platform_hints()
+        assert "还差这些" in dlg.hint_summary.text()
+        assert "微信" in dlg.hint_summary.text()
+
+        dlg.wx_token.setText("token-value")
+        dlg._refresh_platform_hints()
+        assert "没有缺项" in dlg.hint_summary.text()
+    finally:
+        dlg.deleteLater()
+        win.close()
+
+
+def test_guide_dialog_can_be_skipped(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """新手引导：能翻页，也能直接跳过；跳过后标记已看过。"""
+    import mpc.desktop_qt as dq
+
+    marked: list[bool] = []
+    monkeypatch.setattr(dq, "_mark_guide_seen", lambda: marked.append(True))
+
+    win = MainWindow(str(tmp_path / "qt8.db"))
+    dlg = dq.GuideDialog(win)
+    try:
+        assert len(dlg.STEPS) >= 3
+        assert "第 1 步" in dlg.title.text()
+        dlg.next_btn.click()
+        assert "第 2 步" in dlg.title.text()
+        dlg.prev_btn.click()
+        assert "第 1 步" in dlg.title.text()
+        dlg._finish()
+        assert marked, "跳过后必须记下已看过，下次启动不再打扰"
+    finally:
+        dlg.deleteLater()
+        win.close()

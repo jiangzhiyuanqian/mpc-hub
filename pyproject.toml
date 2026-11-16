@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mpc-hub"
-version = "0.2.0"
+version = "0.5.0"
 description = "多平台连接中心 —— 独立的社交通道客服后台（自带 agent 运行时）"
 readme = "README.md"
 license = { text = "MIT" }

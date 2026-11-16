@@ -136,71 +136,72 @@ QSS = """
 * {
     font-family: "Microsoft YaHei UI", "Segoe UI", "PingFang SC", sans-serif;
     font-size: 13px;
-    color: #E6E8EF;
+    color: #1F2328;
 }
 QMainWindow, QWidget#Root {
-    background: #0E1016;
+    background: #F2F4F8;
 }
 /* 对话框是独立顶层窗口，不吃 QMainWindow 的背景规则：
-   不显式给深色底，就会出现"白底 + 近白字"，选中的页签直接看不见。 */
+   不显式给底色，就会退回系统浅灰底，和整体月白主题打架。 */
 QDialog {
-    background: #0E1016;
+    background: #F2F4F8;
 }
 QDialog QLabel {
-    color: #E6E8EF;
+    color: #1F2328;
 }
 QWidget#Sidebar {
-    background: #14171F;
-    border-right: 1px solid #232734;
+    background: #FAFBFD;
+    border-right: 1px solid #E3E7EE;
 }
 QWidget#Topbar {
-    background: #14171F;
-    border-bottom: 1px solid #232734;
+    background: #FAFBFD;
+    border-bottom: 1px solid #E3E7EE;
 }
 QLabel#AppTitle {
     font-size: 16px;
     font-weight: 600;
-    color: #F2F4FA;
+    color: #171A21;
 }
 QLabel#AppSub {
     font-size: 11px;
-    color: #8A93A6;
+    color: #8A93A2;
 }
 QLabel#SectionTitle {
     font-size: 11px;
-    color: #7C8598;
+    color: #8A93A2;
     letter-spacing: 1px;
 }
 QLabel#PanelTitle {
     font-size: 15px;
     font-weight: 600;
+    color: #171A21;
 }
 QLabel#Hint {
     font-size: 11px;
-    color: #7C8598;
+    color: #8A93A2;
 }
 QLabel#Chip {
-    background: #1D212C;
-    border: 1px solid #2B3140;
+    background: #F1F3F7;
+    border: 1px solid #E1E5EC;
     border-radius: 9px;
     padding: 2px 10px;
-    color: #9AA3B8;
+    color: #6B7280;
     font-size: 11px;
 }
 QLabel#ChipOn {
-    background: #12341F;
-    border: 1px solid #1F6B3A;
+    background: #E8F7EE;
+    border: 1px solid #B7E4C8;
     border-radius: 9px;
     padding: 2px 10px;
-    color: #6EE7A0;
+    color: #1E7A43;
     font-size: 11px;
 }
 QLabel#ChipWarn {
-    background: #3A2A0C;
-    border: 1px solid #7A5614;
+    background: #FFF6E5;
+    border: 1px solid #F3D9A6;
     border-radius: 9px;
     padding: 2px 10px;
-    color: #F5C26B;
+    color: #9A6700;
     font-size: 11px;
 }
 QListWidget {
@@ -215,81 +216,82 @@ QListWidget::item {
     margin: 0px;
 }
 QFrame#PlatformCard {
-    background: #1A1E28;
-    border: 1px solid #242938;
+    background: #FFFFFF;
+    border: 1px solid #E6EAF1;
     border-radius: 12px;
 }
 QFrame#PlatformCard:hover {
-    background: #20253180;
-    border: 1px solid #34405A;
+    background: #F7F9FC;
+    border: 1px solid #CFDAF2;
 }
 QFrame#PlatformCardActive {
-    background: #1B2334;
+    background: #EEF3FE;
     border: 1px solid #3D6BD6;
     border-radius: 12px;
 }
 QFrame#ConvCard {
-    background: #171B24;
-    border: 1px solid #232734;
+    background: #FFFFFF;
+    border: 1px solid #E6EAF1;
     border-radius: 10px;
 }
-QFrame#ConvCard:hover { background: #1D2230; }
+QFrame#ConvCard:hover { background: #F4F7FC; }
 QFrame#BubbleIn {
-    background: #1D212C;
-    border: 1px solid #262B38;
+    background: #FFFFFF;
+    border: 1px solid #E3E7EE;
     border-radius: 14px;
 }
 QFrame#BubbleOut {
-    background: #2A4EA8;
-    border: 1px solid #3A62C6;
+    background: #DCE6FB;
+    border: 1px solid #C3D5F6;
     border-radius: 14px;
 }
 QFrame#Card {
-    background: #191E29;
-    border: 1px solid #2A3143;
+    background: #FFFFFF;
+    border: 1px solid #E3E7EE;
     border-radius: 12px;
 }
 QFrame#CardWarn {
-    background: #241F14;
-    border: 1px solid #6B5320;
+    background: #FFFBF0;
+    border: 1px solid #EFDFB8;
     border-radius: 12px;
 }
-QLabel#Meta { color: #7C8598; font-size: 11px; }
-QLabel#SysMsg { color: #6E7789; font-size: 11px; }
-QLabel#BubbleText { color: #E9ECF4; }
-QLabel#BubbleTextOut { color: #FFFFFF; }
+QLabel#Meta { color: #8A93A2; font-size: 11px; }
+QLabel#SysMsg { color: #8A93A2; font-size: 11px; }
+QLabel#BubbleText { color: #1F2328; }
+QLabel#BubbleTextOut { color: #16305F; }
 QPushButton {
-    background: #232937;
-    border: 1px solid #2E3546;
+    background: #FFFFFF;
+    border: 1px solid #D9DEE7;
     border-radius: 8px;
     padding: 6px 14px;
-    color: #D6DAE6;
+    color: #2A2F37;
 }
-QPushButton:hover { background: #2B3243; border-color: #3C465C; }
-QPushButton:pressed { background: #1E2431; }
+QPushButton:hover { background: #F3F6FB; border-color: #C3CCDA; }
+QPushButton:pressed { background: #E9EEF6; }
 QPushButton#Primary {
     background: #3D6BD6;
-    border: 1px solid #4E7BE6;
+    border: 1px solid #3D6BD6;
     color: #FFFFFF;
     font-weight: 600;
 }
-QPushButton#Primary:hover { background: #4A78E3; }
+QPushButton#Primary:hover { background: #4C7BE8; }
 QPushButton#Danger {
-    background: #3A1F24;
-    border: 1px solid #6B3039;
-    color: #F0A0A8;
+    background: #FDF0F0;
+    border: 1px solid #EFC3C3;
+    color: #B32020;
 }
 QPushButton#Ghost {
     background: transparent;
-    border: 1px solid #2E3546;
-    color: #99A2B6;
+    border: 1px solid #D9DEE7;
+    color: #6B7280;
 }
 QLineEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {
-    background: #161A23;
-    border: 1px solid #262C39;
+    background: #FFFFFF;
+    border: 1px solid #DDE2EA;
     border-radius: 8px;
     padding: 6px 10px;
     selection-background-color: #3D6BD6;
+    selection-color: #FFFFFF;
 }
 QLineEdit:focus, QPlainTextEdit:focus, QSpinBox:focus,
 QDoubleSpinBox:focus, QComboBox:focus {
@@ -297,38 +299,33 @@ QDoubleSpinBox:focus, QComboBox:focus {
 }
 QComboBox::drop-down { border: none; width: 18px; }
 QTabWidget::pane {
-    border: 1px solid #232734;
+    border: 1px solid #E3E7EE;
     border-radius: 10px;
-    background: #161A23;
+    background: #FFFFFF;
     top: -1px;
 }
 QTabBar::tab {
     background: transparent;
-    color: #8A93A6;
+    color: #6B7280;
     padding: 8px 18px;
     border-bottom: 2px solid transparent;
 }
 QTabBar::tab:selected {
-    color: #EAF0FF;
+    color: #1F2328;
     border-bottom: 2px solid #3D6BD6;
 }
 QScrollArea { border: none; background: transparent; }
 QScrollBar:vertical { background: transparent; width: 10px; margin: 2px; }
-QScrollBar::handle:vertical { background: #2A3040; border-radius: 5px; min-height: 30px; }
+QScrollBar::handle:vertical { background: #D3D9E3; border-radius: 5px; min-height: 30px; }
 QScrollBar::add-line, QScrollBar::sub-line { height: 0px; }
-QCheckBox { spacing: 8px; }
-QCheckBox::indicator {
-    width: 16px; height: 16px;
-    border: 1px solid #39415380;
-    border-radius: 4px;
-    background: #161A23;
-}
-QCheckBox::indicator:checked { background: #3D6BD6; border-color: #3D6BD6; }
-QStatusBar { background: #14171F; color: #7C8598; }
+/* 勾选框保留系统原生控件：浅色主题下原生对勾最清楚，
+   自己画 indicator 反而会把 ✓ 盖掉。 */
+QCheckBox { spacing: 8px; color: #2A2F37; }
+QStatusBar { background: #FAFBFD; color: #8A93A2; }
 QStatusBar::item { border: none; }
-QMenu { background: #1A1E28; border: 1px solid #2A3140; border-radius: 8px; padding: 6px; }
-QMenu::item { padding: 6px 24px; border-radius: 6px; }
-QMenu::item:selected { background: #2A3348; }
+QMenu { background: #FFFFFF; border: 1px solid #DDE2EA; border-radius: 8px; padding: 6px; }
+QMenu::item { padding: 6px 24px; border-radius: 6px; color: #2A2F37; }
+QMenu::item:selected { background: #EEF3FE; }
 """
 
 
@@ -371,8 +368,19 @@ if QT_AVAILABLE:
     class PlatformCard(QWidget):
         """左侧平台选择层里的一张卡。"""
 
-        def __init__(self, entry: dict[str, str], connected: bool, active: bool) -> None:
+        def __init__(
+            self,
+            entry: dict[str, str],
+            connected: bool,
+            active: bool,
+            state: str = "",
+            detail: str = "",
+        ) -> None:
             super().__init__()
+            self._entry = entry
+            self._connected = connected
+            self._state = state
+            self._detail = detail
             self.setObjectName("PlatformCardActive" if active else "PlatformCard")
             self.setFixedHeight(64)
 
@@ -389,23 +397,43 @@ if QT_AVAILABLE:
             col = QVBoxLayout()
             col.setSpacing(2)
             title = QLabel(entry["label"])
-            title.setStyleSheet("font-weight:600; color:#E9ECF4;")
+            title.setStyleSheet("font-weight:600; color:#1F2328;")
             note = QLabel(entry["note"])
             note.setObjectName("Meta")
             col.addWidget(title)
             col.addWidget(note)
             lay.addLayout(col, 1)
 
+            self.dot = QLabel("")
+            self.dot.setObjectName("Chip")
+            lay.addWidget(self.dot)
+            self._render_dot()
+
+        def _render_dot(self) -> None:
+            entry = self._entry
             if entry["state"] == "planned":
-                dot = QLabel("规划")
-                dot.setObjectName("ChipWarn")
-            elif connected:
-                dot = QLabel("已连接")
-                dot.setObjectName("ChipOn")
+                text, obj = "规划", "ChipWarn"
+            elif self._state == "error":
+                text, obj = "出错", "ChipWarn"
+            elif self._state == "running":
+                text, obj = "监听中", "ChipOn"
+            elif self._connected:
+                text, obj = "已连接", "ChipOn"
             else:
-                dot = QLabel("未连接")
-                dot.setObjectName("Chip")
-            lay.addWidget(dot)
+                text, obj = "未连接", "Chip"
+            self.dot.setText(text)
+            self.dot.setObjectName(obj)
+            self.dot.style().unpolish(self.dot)
+            self.dot.style().polish(self.dot)
+            if self._detail:
+                self.dot.setToolTip(self._detail)
+
+        def set_status(self, connected: bool, state: str, detail: str) -> None:
+            """连接状态会随时间变化，定时刷新胶囊。"""
+            self._connected = connected
+            self._state = state
+            self._detail = detail
+            self._render_dot()
 
     class ConvCard(QWidget):
         """中间会话列表里的一项。"""
@@ -420,7 +448,7 @@ if QT_AVAILABLE:
 
             top = QHBoxLayout()
             name = QLabel(title)
-            name.setStyleSheet("font-weight:600; color:#E9ECF4;")
+            name.setStyleSheet("font-weight:600; color:#1F2328;")
             time_lbl = QLabel(when)
             time_lbl.setObjectName("Meta")
             top.addWidget(name, 1)
@@ -458,7 +486,7 @@ if QT_AVAILABLE:
 
             head = QHBoxLayout()
             t = QLabel(title)
-            t.setStyleSheet("font-weight:600; color:#F5C26B;")
+            t.setStyleSheet("font-weight:600; color:#9A6700;")
             head.addWidget(t)
             head.addStretch(1)
             r = QLabel(reason)
@@ -768,6 +796,10 @@ if QT_AVAILABLE:
             self.wx_status = QLabel("")
             self.wx_status.setObjectName("Hint")
             glay.addWidget(self.wx_status, 3, 0, 1, 4)
+            self.wx_hint = QLabel("")
+            self.wx_hint.setObjectName("Hint")
+            self.wx_hint.setWordWrap(True)
+            glay.addWidget(self.wx_hint, 4, 0, 1, 4)
             lay.addWidget(grp)
             qr_btn.clicked.connect(self._do_qr_login)
 
@@ -785,6 +817,10 @@ if QT_AVAILABLE:
             self.qq_token = QLineEdit(self.settings.platforms.onebot.access_token)
             self.qq_token.setEchoMode(QLineEdit.Password)
             g2.addWidget(self.qq_token, 1, 1, 1, 2)
+            self.qq_hint = QLabel("")
+            self.qq_hint.setObjectName("Hint")
+            self.qq_hint.setWordWrap(True)
+            g2.addWidget(self.qq_hint, 2, 0, 1, 3)
             lay.addWidget(grp2)
 
             # Webhook
@@ -800,10 +836,73 @@ if QT_AVAILABLE:
             self.hook_token = QLineEdit(self.settings.platforms.webhook.token)
             self.hook_token.setEchoMode(QLineEdit.Password)
             g3.addWidget(self.hook_token, 1, 1, 1, 2)
+            self.hook_hint = QLabel("")
+            self.hook_hint.setObjectName("Hint")
+            self.hook_hint.setWordWrap(True)
+            g3.addWidget(self.hook_hint, 2, 0, 1, 3)
             lay.addWidget(grp3)
+
+            self.hint_summary = QLabel("")
+            self.hint_summary.setObjectName("Hint")
+            self.hint_summary.setWordWrap(True)
+            lay.addWidget(self.hint_summary)
+
+            # 任何字段变化都重算"还缺什么"
+            for widget in (
+                self.wx_enabled,
+                self.wx_token,
+                self.wx_uin,
+                self.qq_enabled,
+                self.qq_url,
+                self.qq_token,
+                self.hook_enabled,
+                self.hook_url,
+                self.hook_token,
+            ):
+                signal = widget.toggled if isinstance(widget, QCheckBox) else widget.textChanged
+                signal.connect(lambda *_: self._refresh_platform_hints())
+            self._refresh_platform_hints()
 
             lay.addStretch(1)
             return w
+
+        def _refresh_platform_hints(self) -> None:
+            """把"还缺什么"直接写出来，别让用户自己猜。"""
+            missing: list[str] = []
+
+            wx_on = self.wx_enabled.isChecked()
+            if wx_on and not self.wx_token.text().strip():
+                missing.append("微信：还没填 Token —— 点「扫码登录」用微信扫一次，或手贴 Token")
+            self.wx_hint.setText(
+                "✓ Token 已填（UIN 可以留空，程序会自动补一个）"
+                if wx_on and self.wx_token.text().strip()
+                else "未启用。要接微信，勾上启用并扫码登录。"
+            )
+
+            qq_on = self.qq_enabled.isChecked()
+            if qq_on and not self.qq_url.text().strip():
+                missing.append("QQ：还没填 OneBot 地址（如 http://127.0.0.1:5700）")
+            self.qq_hint.setText(
+                "✓ OneBot 地址已填（没开鉴权时 Token 可留空）"
+                if qq_on and self.qq_url.text().strip()
+                else "未启用。要接 QQ，先跑一个 OneBot 实现（推荐用专用小号）。"
+            )
+
+            hook_on = self.hook_enabled.isChecked()
+            if hook_on and not self.hook_url.text().strip():
+                missing.append("Webhook：还没填出站地址")
+            self.hook_hint.setText(
+                "✓ 出站地址已填"
+                if hook_on and self.hook_url.text().strip()
+                else "未启用。给内部系统用的出站通道。"
+            )
+
+            if missing:
+                self.hint_summary.setText("还差这些：" + "；".join(missing))
+                self.hint_summary.setStyleSheet("color:#B32020;")
+            else:
+                self.hint_summary.setText("当前配置没有缺项，可以直接保存。")
+                self.hint_summary.setStyleSheet("color:#1E7A43;")
 
         def _do_qr_login(self) -> None:
             from .connectors.ilink import ILinkConnector
@@ -973,6 +1072,91 @@ if QT_AVAILABLE:
 
     # ---------------------------------------------------------------- 主窗口
 
+    class GuideDialog(QDialog):
+        """可跳过的新手引导：第一次启动自动出现，随时能从侧栏再打开。"""
+
+        STEPS = [
+            (
+                "第 1 步 · 接上大脑",
+                "点左下角「设置」→「模型接口」，选供应商（DeepSeek / MiniMax / OpenAI 都行），"
+                "填自己的 API Key 和模型名，再点「测试连接」。Key 只写进本机配置文件，不会外传。",
+            ),
+            (
+                "第 2 步 · 接上微信",
+                "「设置」→「平台接入」→ 微信 iLink → 点「扫码登录」，用微信扫窗口里的二维码。"
+                "扫成功 Token 会自动填好，勾上「启用」再保存。官方通道只支持私聊，建议用小号。",
+            ),
+            (
+                "第 3 步 · 让它开口",
+                "回到主界面，右上角可以在「自动回复」和「手动接管」之间切换。"
+                "手动接管模式下 agent 只给草稿，你点「发送」才真的发出去。",
+            ),
+            (
+                "第 4 步 · 守住底线",
+                "「设置」→「治理规则」里可以设白名单、时段、每日条数上限；"
+                "报价、退款承诺这类话会自动转人工审批。你自己是主人，把自己的 ID 加进白名单就不会被拦。",
+            ),
+        ]
+
+        def __init__(self, parent: QWidget | None = None) -> None:
+            super().__init__(parent)
+            self.setWindowTitle("新手引导 · 多平台连接中心")
+            self.resize(620, 400)
+            self.setStyleSheet(QSS)
+            self._index = 0
+
+            root = QVBoxLayout(self)
+            root.setContentsMargins(22, 20, 22, 18)
+            root.setSpacing(12)
+
+            self.title = QLabel("")
+            self.title.setStyleSheet("font-size:17px; font-weight:600; color:#1F2328;")
+            root.addWidget(self.title)
+
+            self.body = QLabel("")
+            self.body.setWordWrap(True)
+            self.body.setStyleSheet("color:#2A2F37;")
+            root.addWidget(self.body, 1)
+
+            self.dots = QLabel("")
+            self.dots.setObjectName("Meta")
+            root.addWidget(self.dots)
+
+            btns = QHBoxLayout()
+            skip = QPushButton("跳过")
+            skip.clicked.connect(self._finish)
+            btns.addWidget(skip)
+            btns.addStretch(1)
+            self.prev_btn = QPushButton("上一步")
+            self.prev_btn.clicked.connect(lambda: self._go(self._index - 1))
+            btns.addWidget(self.prev_btn)
+            self.next_btn = QPushButton("下一步")
+            self.next_btn.setObjectName("Primary")
+            self.next_btn.clicked.connect(lambda: self._go(self._index + 1))
+            btns.addWidget(self.next_btn)
+            root.addLayout(btns)
+
+            self._render()
+
+        def _render(self) -> None:
+            title, text = self.STEPS[self._index]
+            self.title.setText(title)
+            self.body.setText(text)
+            self.dots.setText("第 " + str(self._index + 1) + " / " + str(len(self.STEPS)) + " 步")
+            self.prev_btn.setEnabled(self._index > 0)
+            self.next_btn.setText("完成" if self._index == len(self.STEPS) - 1 else "下一步")
+
+        def _go(self, index: int) -> None:
+            if index >= len(self.STEPS):
+                self._finish()
+                return
+            self._index = max(0, index)
+            self._render()
+
+        def _finish(self) -> None:
+            _mark_guide_seen()
+            self.accept()
+
     class MainWindow(QMainWindow):
         def __init__(self, db_path: str | None = None) -> None:
             super().__init__()
@@ -990,12 +1174,23 @@ if QT_AVAILABLE:
             self._current_platform: str | None = None
             self._current_conversation: str | None = None
             self._mode = "auto"  # auto | manual
+            self._cards: dict[str, PlatformCard] = {}
 
             self._build_ui()
+
+            # 关键：把连接器的长轮询真正跑起来。
+            # 以前桌面端漏了这一步 —— 连接器注册了、界面显示"已连接"，
+            # 但轮询线程根本没启动，手机发的消息拉不下来，自然也不会有回复。
+            # 放在刷新平台列表之前，界面第一眼看到的就是真实状态。
+            self.runtime.start()
             self._reload_platforms()
+
             self._poll_timer = QTimer(self)
             self._poll_timer.timeout.connect(self._drain)
             self._poll_timer.start(200)
+            self._status_timer = QTimer(self)
+            self._status_timer.timeout.connect(self._refresh_platform_status)
+            self._status_timer.start(3000)
 
         # ---------- 布局
 
@@ -1011,7 +1206,7 @@ if QT_AVAILABLE:
 
             split = QSplitter(Qt.Horizontal)
             split.setHandleWidth(1)
-            split.setStyleSheet("QSplitter::handle { background:#232734; }")
+            split.setStyleSheet("QSplitter::handle { background:#E3E7EE; }")
             split.addWidget(self._build_conv_panel())
             split.addWidget(self._build_chat_panel())
             split.setStretchFactor(0, 0)
@@ -1067,6 +1262,11 @@ if QT_AVAILABLE:
             row.addWidget(metric_btn)
             lay.addLayout(row)
 
+            guide_btn = QPushButton("新手引导")
+            guide_btn.setObjectName("Ghost")
+            guide_btn.clicked.connect(self._open_guide)
+            lay.addWidget(guide_btn)
+
             foot = QLabel(f"数据：{self.runtime.store.path if hasattr(self.runtime.store, 'path') else 'data/mpc.db'}")
             foot.setObjectName("Hint")
             foot.setWordWrap(True)
@@ -1075,7 +1275,7 @@ if QT_AVAILABLE:
 
         def _build_conv_panel(self) -> QWidget:
             w = QWidget()
-            w.setStyleSheet("background:#0E1016;")
+            w.setStyleSheet("background:#F2F4F8;")
             lay = QVBoxLayout(w)
             lay.setContentsMargins(12, 16, 12, 12)
             lay.setSpacing(10)
@@ -1097,7 +1297,7 @@ if QT_AVAILABLE:
 
         def _build_chat_panel(self) -> QWidget:
             w = QWidget()
-            w.setStyleSheet("background:#0E1016;")
+            w.setStyleSheet("background:#F2F4F8;")
             lay = QVBoxLayout(w)
             lay.setContentsMargins(0, 0, 0, 0)
             lay.setSpacing(0)
@@ -1133,9 +1333,9 @@ if QT_AVAILABLE:
 
             self.scroll = QScrollArea()
             self.scroll.setWidgetResizable(True)
-            self.scroll.setStyleSheet("background:#0E1016;")
+            self.scroll.setStyleSheet("background:#F2F4F8;")
             self.msg_host = QWidget()
-            self.msg_host.setStyleSheet("background:#0E1016;")
+            self.msg_host.setStyleSheet("background:#F2F4F8;")
             self.msg_lay = QVBoxLayout(self.msg_host)
             self.msg_lay.setContentsMargins(18, 16, 18, 16)
             self.msg_lay.setSpacing(10)
@@ -1145,7 +1345,7 @@ if QT_AVAILABLE:
 
             # 底部输入区
             bottom = QWidget()
-            bottom.setStyleSheet("background:#0E1016;")
+            bottom.setStyleSheet("background:#F2F4F8;")
             bl = QVBoxLayout(bottom)
             bl.setContentsMargins(18, 8, 18, 14)
             bl.setSpacing(8)
@@ -1177,9 +1377,11 @@ if QT_AVAILABLE:
             self.platform_list.blockSignals(True)
             self.platform_list.clear()
             registered = set(self.runtime.registry.names())
+            self._cards = {}
             for entry in PLATFORM_CATALOG:
                 connected = entry["key"] in registered
                 card = PlatformCard(entry, connected, self._current_platform == entry["key"])
+                self._cards[entry["key"]] = card
                 item = QListWidgetItem()
                 item.setSizeHint(QSize(240, 68))
                 item.setData(Qt.UserRole, entry["key"])
@@ -1200,6 +1402,8 @@ if QT_AVAILABLE:
             name = type(llm).__name__.replace("LLM", "")
             self._set_model_chip(f"模型：{self.settings.llm.provider} · {self.settings.llm.model}（{name}）")
             self._refresh_approval_badge()
+            # 卡片刚建好就先刷一次真实状态，别让"已连接"这种假状态停在界面上
+            self._refresh_platform_status()
 
         # ---------- 模型胶囊：宽度不够就省略号，别把字裁掉
 
@@ -1235,31 +1439,72 @@ if QT_AVAILABLE:
             if entry is None:
                 return
             self.chat_title.setText(entry["label"])
+            # 切换平台先清干净：不然标题是新的、内容还留着上一个平台的
+            self._clear_msgs()
+            self.conv_list.clear()
+            self.conv_hint.setText("正在读取会话…")
             if entry["state"] == "planned":
-                self.chat_chip.setText("规划中")
-                self.chat_chip.setObjectName("ChipWarn")
-                self.chat_chip.style().unpolish(self.chat_chip)
-                self.chat_chip.style().polish(self.chat_chip)
+                self._set_chip("规划中", "ChipWarn")
                 self._show_notice(entry["label"], PLANNED_NOTES.get(key, "这条路线还没实现。"))
-                self.conv_list.clear()
+                self.conv_hint.setText("这条路线还没做。")
                 return
             connector = self.runtime.registry.for_platform(key)
             if connector is None:
-                self.chat_chip.setText("未连接")
-                self.chat_chip.setObjectName("Chip")
-                self.chat_chip.style().unpolish(self.chat_chip)
-                self.chat_chip.style().polish(self.chat_chip)
+                self._set_chip("未连接", "Chip")
                 self._show_notice(
                     entry["label"],
                     "这个平台还没连上。点左下角「设置」→「平台接入」填参数，保存后自动接上。",
                 )
-                self.conv_list.clear()
+                self.conv_hint.setText("还没接上。")
                 return
-            self.chat_chip.setText("已连接")
-            self.chat_chip.setObjectName("ChipOn")
+            state, detail = self._connector_state(connector)
+            if state == "error":
+                self._set_chip("出错", "ChipWarn")
+                self._show_notice(entry["label"], detail or "连接器出错了。")
+                self.conv_hint.setText("连接器出错，详情见提示。")
+                self.statusBar().showMessage(entry["label"] + " 出错：" + detail, 8000)
+                return
+            self._set_chip("监听中" if state == "running" else "已连接", "ChipOn")
+            self.chat_chip.setToolTip(detail)
+            self._reload_conversations()
+
+        def _set_chip(self, text: str, obj: str) -> None:
+            self.chat_chip.setText(text)
+            self.chat_chip.setObjectName(obj)
             self.chat_chip.style().unpolish(self.chat_chip)
             self.chat_chip.style().polish(self.chat_chip)
-            self._reload_conversations()
+
+        @staticmethod
+        def _connector_state(connector: Any) -> tuple[str, str]:
+            """读连接器的真实健康状态（不是"注册了就算连上"）。"""
+            try:
+                st = connector.status()
+            except Exception:
+                return "idle", ""
+            return str(st.get("state") or "idle"), str(st.get("detail") or "")
+
+        def _refresh_platform_status(self) -> None:
+            """定时刷新各平台状态：轮询在跑吗？有没有报错？"""
+            for entry in PLATFORM_CATALOG:
+                card = self._cards.get(entry["key"])
+                if card is None:
+                    continue
+                connector = self.runtime.registry.for_platform(entry["key"])
+                if connector is None:
+                    card.set_status(False, "", "")
+                    continue
+                state, detail = self._connector_state(connector)
+                card.set_status(True, state, detail)
+            if self._current_platform:
+                connector = self.runtime.registry.for_platform(self._current_platform)
+                if connector is not None:
+                    state, detail = self._connector_state(connector)
+                    if state == "error":
+                        self._set_chip("出错", "ChipWarn")
+                        self.chat_chip.setToolTip(detail)
+                    elif state == "running":
+                        self._set_chip("监听中", "ChipOn")
+                        self.chat_chip.setToolTip(detail)
 
         def _reload_conversations(self) -> None:
             key = self._current_platform
@@ -1318,7 +1563,7 @@ if QT_AVAILABLE:
             body = QLabel(text)
             body.setWordWrap(True)
             body.setTextInteractionFlags(Qt.TextSelectableByMouse)
-            body.setStyleSheet("color:#AEB6C8;")
+            body.setStyleSheet("color:#5C6470;")
             lay.addWidget(body)
             self.msg_lay.insertWidget(self.msg_lay.count() - 1, card)
 
@@ -1337,9 +1582,9 @@ if QT_AVAILABLE:
             head = QHBoxLayout()
             head.setSpacing(6)
             who = QLabel(name)
-            who.setStyleSheet("font-size:11px; color:#9AA3B8;")
+            who.setStyleSheet("font-size:11px; color:#5C6470;")
             when = QLabel(_fmt_day(ts) + " " + _fmt_ts(ts))
-            when.setStyleSheet("font-size:11px; color:#6E7789;")
+            when.setStyleSheet("font-size:11px; color:#8A93A2;")
             head.addWidget(who)
             head.addStretch(1)
             head.addWidget(when)
@@ -1565,8 +1810,13 @@ if QT_AVAILABLE:
                 self.hub = self.runtime.hub
                 self.store = self.runtime.store
                 self._reload_platforms()
+                # 重建运行时后要把轮询再拉起来，否则新配的微信又不会回消息
+                self.runtime.start()
                 self._reload_conversations()
                 self.statusBar().showMessage("设置已保存并生效", 4000)
+
+        def _open_guide(self) -> None:
+            GuideDialog(self).exec()
 
         def _open_metrics(self) -> None:
             data = self.hub.metrics()
@@ -1611,6 +1861,20 @@ if QT_AVAILABLE:
             super().closeEvent(event)
 
 
+def _guide_marker_path() -> Path:
+    return Path.home() / ".mpc-hub" / "guide-seen"
+
+
+def _guide_seen() -> bool:
+    return _guide_marker_path().exists()
+
+
+def _mark_guide_seen() -> None:
+    path = _guide_marker_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("seen", encoding="utf-8")
+
+
 def launch(db_path: str | None = None) -> int:
     """启动现代桌面端。"""
     if not QT_AVAILABLE:
@@ -1620,4 +1884,8 @@ def launch(db_path: str | None = None) -> int:
     app.setApplicationName("多平台连接中心")
     win = MainWindow(db_path)
     win.show()
+    if not _guide_seen():
+        # 第一次启动给一段引导，随时可以跳过
+        app.processEvents()
+        GuideDialog(win).exec()
     return app.exec()

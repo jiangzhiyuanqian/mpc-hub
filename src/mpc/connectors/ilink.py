@@ -28,6 +28,8 @@ conn.start()          # 后台线程长轮询
 
 from __future__ import annotations
 
+import base64
+import random
 import threading
 import time
 import uuid
@@ -47,6 +49,8 @@ ITEM_VOICE = 3
 ITEM_FILE = 4
 ITEM_VIDEO = 5
 
+MESSAGE_TYPE_TEXT = 1
+
 
 class ILinkError(RuntimeError):
     """iLink 通道错误。"""
@@ -56,12 +60,49 @@ class ILinkDeliveryRejected(ILinkError):
     """平台明确拒收（429/503 或 ret=-2）：消息未入队，可以安全重发。"""
 
 
+class ILinkStaleToken(ILinkError):
+    """bot_token 过期（errcode=-14），需要重新扫码。"""
+
+
 def _pick(data: dict[str, Any], *names: str) -> str:
     for name in names:
         value = data.get(name)
         if isinstance(value, str) and value:
             return value
     return ""
+
+
+def _pick_any(data: dict[str, Any], *names: str) -> str:
+    """取值并转成字符串：数字型 id（官方接口的 message_id 就是 int）也能取到。"""
+    for name in names:
+        value = data.get(name)
+        if value is None or value == "":
+            continue
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, float):
+            return str(int(value))
+        if isinstance(value, int):
+            return str(value)
+        if isinstance(value, str):
+            return value
+        if isinstance(value, dict):
+            inner = _pick_any(value, "id", "value", "str")
+            if inner:
+                return inner
+    return ""
+
+
+def _merge_message(raw: dict[str, Any]) -> dict[str, Any]:
+    """官方实现会把嵌套的 `message` 对象平铺到外层，这里对齐。"""
+    if not isinstance(raw, dict):
+        return {}
+    inner = raw.get("message")
+    if isinstance(inner, dict):
+        merged = dict(raw)
+        merged.update(inner)
+        return merged
+    return raw
 
 
 class ILinkConnector(Connector):
@@ -89,6 +130,13 @@ class ILinkConnector(Connector):
         self._context_tokens: dict[str, str] = {}
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
+        # 真实健康状态（界面据此显示"轮询中 / 出错了"，而不是"已注册"这种假状态）
+        self._running = False
+        self._last_error = ""
+        self._last_poll_at = 0.0
+        self._received = 0
+        self._consecutive_errors = 0
+        self._stale_token = False
 
     # ---------- 能力 ----------
 
@@ -111,13 +159,18 @@ class ILinkConnector(Connector):
         headers = {
             "content-type": "application/json",
             "iLink-App-ClientVersion": "1",
+            # 官方实现无条件发这个头（没配置时用随机 base64 串占位），照做以免服务端拒收
+            "X-WECHAT-UIN": self.uin or self._random_uin(),
         }
-        if self.uin:
-            headers["X-WECHAT-UIN"] = self.uin
         if self.bot_token:
             headers["Authorization"] = f"Bearer {self.bot_token}"
             headers["AuthorizationType"] = "ilink_bot_token"
         return headers
+
+    @staticmethod
+    def _random_uin() -> str:
+        """官方做法：随机数字的 base64，用作缺省 X-WECHAT-UIN。"""
+        return base64.b64encode(str(random.randint(0, 0xFFFFFFFF)).encode()).decode()
 
     def _request(
         self,
@@ -149,6 +202,8 @@ class ILinkConnector(Connector):
             )
             if path.endswith("/sendmessage") and ret == -2 and errcode == 0:
                 raise ILinkDeliveryRejected(message)
+            if ret == -14 or errcode == -14:
+                raise ILinkStaleToken(message + "（bot_token 过期，请重新扫码登录）")
             raise ILinkError(message)
         return data
 
@@ -187,10 +242,28 @@ class ILinkConnector(Connector):
 
     # ---------- 入站 ----------
 
-    def to_envelope(self, payload: dict[str, Any]) -> Envelope:
-        """把 iLink 的 msg 对象翻译成统一契约。"""
-        msg = payload.get("msg") if isinstance(payload.get("msg"), dict) else payload
-        sender_id = _pick(msg, "from_user_id", "from_user")
+    def parse_message(self, payload: dict[str, Any]) -> Envelope | None:
+        """把 iLink 的一条 msg 翻译成统一契约。
+
+        对齐官方 `parseInbound`：
+        - 平铺嵌套的 `message` 对象；
+        - 只处理 `message_type == 1`（文本），其余类型返回 None；
+        - 语音转写带 `[语音] ` 前缀；
+        - 文本用空串拼接（官方是 `parts.join('')`）。
+        """
+        raw = payload.get("msg") if isinstance(payload.get("msg"), dict) else payload
+        msg = _merge_message(raw)
+        if not msg:
+            return None
+
+        raw_type = msg.get("message_type")
+        if raw_type is not None and int(raw_type) != MESSAGE_TYPE_TEXT:
+            return None
+
+        sender_id = _pick_any(msg, "from_user_id", "from_user")
+        if not sender_id:
+            return None
+
         parts: list[str] = []
         text = msg.get("text")
         if isinstance(text, str) and text:
@@ -209,16 +282,25 @@ class ILinkConnector(Connector):
                 body = item.get("voice_item") or {}
                 value = body.get("text")  # 语音已由平台 ASR 转写
                 if isinstance(value, str) and value:
-                    parts.append(value)
+                    parts.append("[语音] " + value)
+                else:
+                    attachments.append("ilink:voice")
             else:
-                attachments.append(f"ilink:item:{kind}")
+                attachments.append("ilink:item:" + str(kind))
 
-        context_token = _pick(msg, "context_token")
+        context_token = _pick_any(msg, "context_token")
         if context_token and sender_id:
             self._context_tokens[sender_id] = context_token
 
-        timestamp = float(msg.get("timestamp") or msg.get("create_time") or time.time())
-        message_id = _pick(msg, "msg_id", "message_id", "id") or f"{sender_id}:{timestamp}"
+        created_ms = msg.get("create_time_ms")
+        if created_ms:
+            timestamp = float(created_ms) / 1000.0
+        else:
+            timestamp = float(msg.get("timestamp") or msg.get("create_time") or time.time())
+        message_id = (
+            _pick_any(msg, "message_id", "msg_id", "id")
+            or sender_id + ":" + str(timestamp)
+        )
 
         return Envelope(
             message_id=message_id,
@@ -227,13 +309,20 @@ class ILinkConnector(Connector):
             conversation_kind=ConversationKind.PRIVATE,
             sender_id=sender_id,
             sender_name="",
-            text="\n".join(parts),
+            text="".join(parts),
             is_mention=True,  # 私聊无需 @
             attachments=attachments,
-            reply_to_message_id=_pick(msg, "reply_to_message_id") or None,
+            reply_to_message_id=_pick_any(msg, "reply_to_message_id") or None,
             timestamp=timestamp,
             raw=payload,
         )
+
+    def to_envelope(self, payload: dict[str, Any]) -> Envelope:
+        """把 iLink 的 msg 对象翻译成统一契约（非文本消息抛错）。"""
+        envelope = self.parse_message(payload)
+        if envelope is None:
+            raise ValueError("不是可处理的文本消息")
+        return envelope
 
     # ---------- 出站 ----------
 
@@ -274,6 +363,12 @@ class ILinkConnector(Connector):
         self._thread = None
 
     def _poll_loop(self) -> None:
+        """长轮询拉消息。
+
+        对齐官方：游标优先用 `get_updates_buf`，消息列表认 `msgs`/`messages`/`updates`；
+        出错不再静默吞掉，而是记进 `_last_error`，界面能看到"为什么没回消息"。
+        """
+        self._running = True
         while not self._stop.is_set():
             try:
                 data = self._request(
@@ -284,24 +379,72 @@ class ILinkConnector(Connector):
                     },
                     timeout=self.poll_timeout_secs + 10.0,
                 )
-            except Exception:
+            except ILinkStaleToken as exc:
+                self._last_error = str(exc)
+                self._consecutive_errors += 1
                 time.sleep(3.0)
                 continue
-            self._cursor = _pick(data, "sync_buf", "get_updates_buf", "next_cursor") or self._cursor
-            for msg in data.get("msg_list") or data.get("msgs") or []:
+            except Exception as exc:  # noqa: BLE001
+                self._last_error = "拉取消息失败：" + (str(exc) or type(exc).__name__)
+                self._consecutive_errors += 1
+                time.sleep(3.0)
+                continue
+
+            self._consecutive_errors = 0
+            self._last_error = ""
+            self._last_poll_at = time.time()
+            # 官方取值顺序：get_updates_buf → cursor → sync_buf
+            self._cursor = (
+                _pick(data, "get_updates_buf", "cursor", "sync_buf", "next_cursor")
+                or self._cursor
+            )
+            raw_list = (
+                data.get("msgs")
+                or data.get("messages")
+                or data.get("updates")
+                or data.get("msg_list")
+                or []
+            )
+            for msg in raw_list:
                 if not isinstance(msg, dict):
                     continue
                 try:
-                    envelope = self.to_envelope(msg)
+                    envelope = self.parse_message(msg)
                 except Exception:
                     continue
-                if not envelope.sender_id or not envelope.text:
+                if envelope is None or not envelope.sender_id or not envelope.text:
                     continue
+                self._received += 1
                 if self.on_message is not None:
                     try:
                         self.on_message(envelope)
                     except Exception:
                         pass
+        self._running = False
+
+    def status(self) -> dict[str, Any]:
+        """真实健康状态：界面据此显示"轮询中 / 出错了"，而不是"已注册"。"""
+        if self._last_error:
+            state = "error"
+            detail = self._last_error
+        elif self._running:
+            state = "running"
+            detail = "正在监听新消息（已收 " + str(self._received) + " 条）"
+        elif self.bot_token:
+            state = "idle"
+            detail = "已配置，尚未开始监听"
+        else:
+            state = "idle"
+            detail = "还没扫码登录，没有凭据"
+        return {
+            "state": state,
+            "running": self._running,
+            "detail": detail,
+            "last_error": self._last_error,
+            "last_poll_at": self._last_poll_at,
+            "received": self._received,
+            "consecutive_errors": self._consecutive_errors,
+        }
 
     def close(self) -> None:
         self.stop()

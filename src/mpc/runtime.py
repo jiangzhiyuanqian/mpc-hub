@@ -156,6 +156,17 @@ class Runtime:
         except Exception:
             pass
 
+    def start(self) -> None:
+        """启动所有已注册连接器的轮询（微信 iLink 等）。
+
+        以前桌面端忘了调这一步：连接器被注册了、界面显示"已连接"，
+        但长轮询线程根本没跑，手机发的消息自然拉不下来、也就没有回复。
+        """
+        try:
+            self.registry.start_all()
+        except Exception:
+            pass
+
 
 def build_runtime(
     db_path: str | os.PathLike[str] | None = None,
